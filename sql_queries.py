@@ -45,10 +45,10 @@ CREATE TABLE IF NOT EXISTS staging_song (
     staging_song_id bigint identity(0,1) PRIMARY KEY,
     num_songs integer,
     artist_id text,
-    artist_latitude text,
-    artist_longitude text,
-    artist_location text,
-    artist_name text,
+    artist_latitude numeric,
+    artist_longitude numeric,
+    artist_location varchar(100),
+    artist_name varchar(100),
     song_id text,
     title text,
     duration numeric,
@@ -118,7 +118,7 @@ staging_events_copy = (
     """
     COPY staging_event FROM {s3_file_path}
     CREDENTIALS 'aws_iam_role={role_arn}'
-    json '{json_path}';
+    json {json_path};
 
 """
 ).format(
@@ -131,7 +131,7 @@ staging_songs_copy = (
     """
     COPY staging_song FROM {s3_file_path}
     CREDENTIALS 'aws_iam_role={role_arn}'
-    json 'auto';
+    json 'auto' TRUNCATECOLUMNS;
 """
 ).format(s3_file_path=config.get("S3", "SONG_DATA"), role_arn=config.get("IAM_ROLE", "ARN"))
 
