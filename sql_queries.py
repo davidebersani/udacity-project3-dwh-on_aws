@@ -6,21 +6,21 @@ config.read("dwh.cfg")
 
 # DROP TABLES
 
-staging_events_table_drop = "DROP TABLE IF EXISTS staging_event"
-staging_songs_table_drop = "DROP TABLE IF EXISTS staging_song"
-songplay_table_drop = "DROP TABLE IF EXISTS songplay"
-user_table_drop = "DROP TABLE IF EXISTS user"
-song_table_drop = "DROP TABLE IF EXISTS song"
-artist_table_drop = "DROP TABLE IF EXISTS artist"
-time_table_drop = "DROP TABLE IF EXISTS time"
+staging_events_table_drop = "DROP TABLE IF EXISTS staging_event;"
+staging_songs_table_drop = "DROP TABLE IF EXISTS staging_song;"
+songplay_table_drop = "DROP TABLE IF EXISTS songplays;"
+user_table_drop = "DROP TABLE IF EXISTS users;"
+song_table_drop = "DROP TABLE IF EXISTS songs;"
+artist_table_drop = "DROP TABLE IF EXISTS artists;"
+time_table_drop = "DROP TABLE IF EXISTS time;"
 
 # CREATE TABLES
 
 staging_events_table_create = """
 CREATE TABLE IF NOT EXISTS staging_event (
-    event_id SERIAL PRIMARY KEY,
+    staging_event_id bigint identity(0,1) PRIMARY KEY,
     artist text,
-    auth text
+    auth text,
     firstName text,
     gender char,
     itemInSession integer,
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS staging_event (
 
 staging_songs_table_create = """
 CREATE TABLE IF NOT EXISTS staging_song (
-    song_id SERIAL PRIMARY KEY,
+    staging_song_id bigint identity(0,1) PRIMARY KEY,
     num_songs integer,
     artist_id text,
     artist_latitude text,
@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS staging_song (
 
 songplay_table_create = """
 CREATE TABLE IF NOT EXISTS songplays (
-    songplay_id BIGSERIAL PRIMARY KEY,
+    songplay_id bigint identity(0,1) PRIMARY KEY,
     start_time timestamp NOT NULL,
     user_id int NOT NULL,
     level varchar,
@@ -121,7 +121,11 @@ staging_events_copy = (
     json '{json_path}';
 
 """
-).format(s3_file_path=config.get("LOG_DATA"), role_arn=config.get("ARN"), json_path=config.get("LOG_JSONPATH"))
+).format(
+    s3_file_path=config.get("S3", "LOG_DATA"),
+    role_arn=config.get("IAM_ROLE", "ARN"),
+    json_path=config.get("S3", "LOG_JSONPATH"),
+)
 
 staging_songs_copy = (
     """
@@ -129,7 +133,7 @@ staging_songs_copy = (
     CREDENTIALS 'aws_iam_role={role_arn}'
     json 'auto';
 """
-).format(s3_file_path=config.get("SONG_DATA"), role_arn=config.get("ARN"))
+).format(s3_file_path=config.get("S3", "SONG_DATA"), role_arn=config.get("IAM_ROLE", "ARN"))
 
 # FINAL TABLES
 
