@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS staging_event (
     sessionId integer,
     song text,
     status integer,
-    ts bigint,
+    ts timestamp,
     userAgent text,
     userId integer
 );
@@ -62,8 +62,8 @@ CREATE TABLE IF NOT EXISTS songplays (
     start_time timestamp NOT NULL,
     user_id int NOT NULL,
     level varchar,
-    song_id varchar NOT NULL,
-    artist_id varchar NOT NULL,
+    song_id varchar,
+    artist_id varchar,
     session_id int,
     location varchar,
     user_agent varchar
@@ -118,7 +118,8 @@ staging_events_copy = (
     """
     COPY staging_event FROM {s3_file_path}
     CREDENTIALS 'aws_iam_role={role_arn}'
-    json {json_path};
+    json {json_path}
+    timeformat 'epochmillisecs';
 
 """
 ).format(
@@ -139,33 +140,36 @@ staging_songs_copy = (
 
 songplay_table_insert = """
 INSERT INTO songplays (start_time, user_id, level, song_id, artist_id, session_id, location, user_agent)
-VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+(select ts, userId, level, song_id, artist_id, sessionId, location, userAgent
+from staging_event join staging_song  on (song = title and artist_name = artist))
 """
 
 user_table_insert = """
 INSERT INTO users (user_id, first_name, last_name, gender, level)
-VALUES (%s, %s, %s, %s, %s)
-ON CONFLICT (user_id) DO UPDATE
-SET level = EXCLUDED.level
+(select distinct(userId), firstName, lastName, gender, level
+from staging_event
+where userId IS NOT NULL)
 """
 
 song_table_insert = """
 INSERT INTO songs (song_id, title, artist_id, year, duration)
-VALUES (%s, %s, %s, %s, %s)
-ON CONFLICT (song_id) DO NOTHING
+(select song_id, title, artist_id, year, duration
+from staging_song
+where song_id IS NOT NULL)
 """
 
 artist_table_insert = """
 INSERT INTO artists (artist_id, name, location, latitude, longitude)
-VALUES (%s, %s, %s, %s, %s)
-ON CONFLICT (artist_id) DO NOTHING
+(select artist_id, artist_name, artist_location, artist_latitude, artist_longitude
+from staging_song
+where artist_id IS NOT NULL)
 """
 
 
 time_table_insert = """
 INSERT INTO time (start_time, hour, day, week, month, year, weekday)
-VALUES (%s, %s, %s, %s, %s, %s, %s)
-ON CONFLICT (start_time) DO NOTHING
+(select ts, EXTRACT(hour from ts), EXTRACT(day from ts), EXTRACT(week from ts), EXTRACT(month from ts), EXTRACT(year from ts), EXTRACT(weekday from ts)
+from staging_event)
 """
 
 # QUERY LISTS
@@ -190,9 +194,9 @@ drop_table_queries = [
 ]
 copy_table_queries = [staging_events_copy, staging_songs_copy]
 insert_table_queries = [
-    songplay_table_insert,
     user_table_insert,
     song_table_insert,
     artist_table_insert,
     time_table_insert,
+    songplay_table_insert,
 ]

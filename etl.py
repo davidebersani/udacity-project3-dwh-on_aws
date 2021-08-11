@@ -10,6 +10,7 @@ logging.basicConfig(level=logging.INFO)
 
 def load_staging_tables(cur, conn):
     for query in copy_table_queries:
+        print(query)
         cur.execute(query)
         conn.commit()
 
@@ -29,11 +30,9 @@ def main():
     cur = conn.cursor()
 
     logging.info("Loading staging tables...")
-    # load_staging_tables(cur, conn)
-    print(copy_table_queries[1])
-    cur.execute(copy_table_queries[1])
-    conn.commit()
-    # insert_tables(cur, conn)
+    load_staging_tables(cur, conn)
+    logging.info("Loading dimension and fact tables...")
+    insert_tables(cur, conn)
 
     conn.close()
 
