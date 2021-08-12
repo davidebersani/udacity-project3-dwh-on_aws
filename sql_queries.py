@@ -153,14 +153,14 @@ where userId IS NOT NULL)
 
 song_table_insert = """
 INSERT INTO songs (song_id, title, artist_id, year, duration)
-(select song_id, title, artist_id, year, duration
+(select distinct(song_id), title, artist_id, year, duration
 from staging_song
 where song_id IS NOT NULL)
 """
 
 artist_table_insert = """
 INSERT INTO artists (artist_id, name, location, latitude, longitude)
-(select artist_id, artist_name, artist_location, artist_latitude, artist_longitude
+(select distinct(artist_id), artist_name, artist_location, artist_latitude, artist_longitude
 from staging_song
 where artist_id IS NOT NULL)
 """
@@ -168,7 +168,7 @@ where artist_id IS NOT NULL)
 
 time_table_insert = """
 INSERT INTO time (start_time, hour, day, week, month, year, weekday)
-(select ts, EXTRACT(hour from ts), EXTRACT(day from ts), EXTRACT(week from ts), EXTRACT(month from ts), EXTRACT(year from ts), EXTRACT(weekday from ts)
+(select distinct(ts), EXTRACT(hour from ts), EXTRACT(day from ts), EXTRACT(week from ts), EXTRACT(month from ts), EXTRACT(year from ts), EXTRACT(weekday from ts)
 from staging_event)
 """
 
